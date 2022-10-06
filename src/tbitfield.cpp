@@ -13,6 +13,10 @@ static TBitField FAKE_BITFIELD(1);
 
 TBitField::TBitField(int len)
 {
+    if (len < 0)
+    {
+        throw "ERROR";
+    }
     BitLen = len;
     TELEM s = sizeof(TELEM) * 8;
     MemLen = (len + s - 1) / s;
@@ -45,7 +49,7 @@ int TBitField::GetMemIndex(const int n) const // индекс Мем для би
         throw "ERROR";
     }
 
-    return n/ (sizeof(TELEM) * 8);
+    return n / (sizeof(TELEM) * 8);
 }
 
 TELEM TBitField::GetMemMask(const int n) const // битовая маска для бита n
@@ -82,7 +86,7 @@ void TBitField::ClrBit(const int n) // очистить бит
 
     int index = GetMemIndex(n);
     int number_bit = n - (n / (sizeof(TELEM) * 8) * (sizeof(TELEM) * 8));
-    pMem[index] &= GetMemMask(number_bit);
+    pMem[index] &= ~GetMemMask(number_bit);
 }
 
 int TBitField::GetBit(const int n) const // получить значение бита
@@ -157,27 +161,128 @@ int TBitField::operator!=(const TBitField &bf) const // сравнение
 
 TBitField TBitField::operator|(const TBitField &bf) // операция "или"
 {
-    return FAKE_BITFIELD;
+    //int max1 = 0;
+    //if (BitLen >= bf.BitLen) {
+
+    //    max1 = BitLen;
+    //}
+    //else {
+    //    max1 = bf.BitLen;
+    //}
+
+    //int max2 = 0;
+
+    //if (MemLen >= bf.MemLen) {
+
+    //    max2 = MemLen;
+    //}
+    //else {
+    //    max2 = bf.MemLen;
+    //}
+
+    //TBitField bf2(max1);
+    int max1 = max(BitLen, bf.BitLen);
+    TBitField bf2(max1);
+    int max2 = max(MemLen, bf.MemLen);
+
+    for (int i = 0; i < max2; i++) {
+
+        if (i < MemLen && i < bf.MemLen) {
+            bf2.pMem[i] = pMem[i] | bf.pMem[i];
+        }
+
+        else {
+            bf2.pMem[i] = 0;
+        }
+    }
+
+
+    return bf2;
+
 }
 
 TBitField TBitField::operator&(const TBitField &bf) // операция "и"
 {
-    return FAKE_BITFIELD;
+    //int max1 = 0;
+    //if (BitLen >= bf.BitLen) {
+
+    //    max1 = BitLen;
+    //}
+    //else {
+    //    max1 = bf.BitLen;
+    //}
+
+    //int max2 = 0;
+
+    //if (MemLen >= bf.MemLen) {
+
+    //    max2 = MemLen;
+    //}
+    //else {
+    //    max2 = bf.MemLen;
+    //}
+
+    //TBitField bf2(max1);
+    int max1 = max(BitLen, bf.BitLen);
+    TBitField bf2(max1);
+    int max2 = max(MemLen, bf.MemLen);
+
+    for (int i = 0; i < max2; i++) {
+
+        if (i < MemLen && i < bf.MemLen) {
+            bf2.pMem[i] = pMem[i] & bf.pMem[i];
+        }
+
+        else {
+            bf2.pMem[i] = 0;
+        }
+    }
+
+
+    return bf2;
 }
 
 TBitField TBitField::operator~(void) // отрицание
 {
-    return FAKE_BITFIELD;
+    TBitField bf2(*this);
+
+    for (int i = 0; i < MemLen; i++)
+    {
+        bf2.pMem[i] = ~pMem[i];
+    }
+
+    int last_bit = BitLen - (MemLen - 1) * (sizeof(TELEM) * 8);
+    if (last_bit < sizeof(TELEM) * 8)
+    {
+        int mask = (1 << (last_bit)) - 1;
+        bf2.pMem[MemLen - 1] &= mask;
+    }
+
+    return bf2;
 }
 
 // ввод/вывод
 
 istream &operator>>(istream &istr, TBitField &bf) // ввод
 {
+    int tmp = 0;
+
+    for (int i = 0; i < bf.BitLen; i++)
+    {
+        istr >> tmp;
+        bf.SetBit(tmp);
+    }
+
     return istr;
 }
 
 ostream &operator<<(ostream &ostr, const TBitField &bf) // вывод
 {
+    ostr << bf.BitLen;
+    ostr << bf.MemLen;
+    for (int i = 0; i < bf.BitLen; i++)
+    {
+        ostr << bf.GetBit(i);
+    }
     return ostr;
 }
